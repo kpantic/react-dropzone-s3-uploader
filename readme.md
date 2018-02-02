@@ -1,10 +1,12 @@
 # Drag and drop s3 file uploader for React
 
-This component uploads files dropped into [react-dropzone](https://github.com/okonet/react-dropzone) to s3 with [react-s3-uploader](https://github.com/odysseyscience/react-s3-uploader).
+This is a fork of [react-dropzone-s3-uploader](https://github.com/founderlab/react-dropzone-s3-uploader) that support using multipart uploading by using [react-s3-uploader-multipart](https://github.com/kpantic/react-s3-uploader-multipart) instead of [react-s3-uploader](https://github.com/odysseyscience/react-s3-uploader).
+
+This component uploads files dropped into [react-dropzone](https://github.com/okonet/react-dropzone) to s3 with [react-s3-uploader-multipart](https://github.com/kpantic/react-s3-uploader-multipart).
 
 For more detailed docs see the source packages
 - [react-dropzone](https://github.com/okonet/react-dropzone)
-- [react-s3-uploader](https://github.com/odysseyscience/react-s3-uploader)
+- [react-s3-uploader-multipart](https://github.com/kpantic/react-s3-uploader-multipart)
 
 
 
@@ -19,7 +21,7 @@ For more detailed docs see the source packages
 Prop              | Type              | Description                                 
 ----------------- | ----------------- | ------------------------------------------- 
 s3Url             | string.isRequired | The url of your s3 bucket (`https://my-bucket.s3.amazonaws.com`)
-upload            | object.isRequired | Upload options passed to react-s3-uploader. See [react-s3-uploader](https://github.com/odysseyscience/react-s3-uploader) for available options. Don't set `onProgress`, `onError` or `onFinish` here - use the ones below
+upload            | object.isRequired | Upload options passed to react-s3-uploader-multipart. See [react-s3-uploader-multipart](https://github.com/kpantic/react-s3-uploader-multipart) for available options. Don't set `onProgress`, `onError` or `onFinish` here - use the ones below
 filename          | string            | Used as the default value if present. Filename of an image already hosted on s3 (i.e. one that was uploaded previously)
 notDropzoneProps  | array             | A list of props to *not* pass to `react-dropzone`
 isImage           | func              | A function that takes a filename and returns true if it's an image
@@ -121,7 +123,7 @@ class S3Uploader extends React.Component {
 
 - Use s3Router from react-s3-uploader to get signed urls for uploads.
 - `react-dropzone-s3-uploader/s3router` can be used as an alias for `react-s3-uploader/s3router`.
-- See [react-s3-uploader](https://github.com/odysseyscience/react-s3-uploader) for more details.
+- See [react-s3-uploader-multipart](https://github.com/kpantic/react-s3-uploader-multipart) for more details.
 
 ```javascript
 app.use('/s3', require('react-dropzone-s3-uploader/s3router')({
