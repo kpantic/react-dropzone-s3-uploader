@@ -10,6 +10,7 @@ export default class DropzoneS3Uploader extends React.Component {
     notDropzoneProps: PropTypes.array.isRequired,
     isImage: PropTypes.func.isRequired,
     passChildrenProps: PropTypes.bool,
+    uploadOnDrop: PropTypes.bool,
 
     imageComponent: PropTypes.func,
     fileComponent: PropTypes.func,
@@ -43,8 +44,10 @@ export default class DropzoneS3Uploader extends React.Component {
     upload: {},
     className: 'react-dropzone-s3-uploader',
     passChildrenProps: true,
+    uploadOnDrop: true,
     isImage: filename => filename && filename.match(/\.(jpeg|jpg|gif|png|svg)/i),
-    notDropzoneProps: ['onFinish', 's3Url', 'filename', 'host', 'upload', 'isImage', 'notDropzoneProps'],
+    notDropzoneProps: ['onFinish', 'onDrop', 's3Url', 'filename', 'host', 'upload',
+                       'isImage', 'notDropzoneProps', 'uploadOnDrop'],
 
     style: {
       width: 200,
@@ -77,7 +80,10 @@ export default class DropzoneS3Uploader extends React.Component {
         file: {},
       })
     }
-    this.state = {uploadedFiles}
+    this.state = {
+      uploadedFiles: uploadedFiles,
+      selectedFiles: []
+    };
   }
 
   componentWillMount = () => this.setUploaderOptions(this.props)
@@ -121,13 +127,27 @@ export default class DropzoneS3Uploader extends React.Component {
   }
 
   handleDrop = (files, rejectedFiles) => {
-    this.setState({uploadedFiles: [], error: null, progress: null})
     const options = {
       files,
-      ...this.state.uploaderOptions,
+      ...this.state.uploaderOptions
+    };
+    this.setState({
+      uploadedFiles: [], error: null, progress: null, selectedFiles: files
+    });
+
+    this.props.onDrop && this.props.onDrop(files, rejectedFiles);
+    if (this.props.uploadOnDrop){
+      this.startFileUpload(options);
     }
-    new S3Upload(options) // eslint-disable-line
-    this.props.onDrop && this.props.onDrop(files, rejectedFiles)
+  }
+
+  startFileUpload = (files=null) => {
+    const options = {
+      files: files !== null ? files: this.state.selectedFiles,
+      ...this.state.uploaderOptions
+    };
+
+    new S3Upload(options);
   }
 
   fileUrl = (s3Url, filename) => `${s3Url.endsWith('/') ? s3Url.slice(0, -1) : s3Url}/${filename}`
