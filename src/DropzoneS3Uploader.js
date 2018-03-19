@@ -102,6 +102,15 @@ export default class DropzoneS3Uploader extends React.Component {
     })
   }
 
+  clearSelectedFiles = () => {
+    this.setState(
+      {...this.state,
+       error: null,
+       progress: null,
+       selectedFiles: []}
+    );
+  }
+
   handleProgress = (progress, textState, file, stats) => {
     this.props.onProgress && this.props.onProgress(progress, textState, file, stats);
     this.setState({progress});
