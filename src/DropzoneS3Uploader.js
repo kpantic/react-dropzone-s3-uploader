@@ -82,11 +82,20 @@ export default class DropzoneS3Uploader extends React.Component {
     }
     this.state = {
       uploadedFiles: uploadedFiles,
-      selectedFiles: []
+      selectedFiles: [],
+      activeUpload: null
     };
   }
 
-  componentWillMount = () => this.setUploaderOptions(this.props)
+  componentWillMount = () => {
+    this.setUploaderOptions(this.props);
+    this._mounted = true;
+  }
+
+  componentWillUnmount = () => {
+    this._mounted = false;
+  }
+
   componentWillReceiveProps = props => this.setUploaderOptions(props)
 
   setUploaderOptions = props => {
@@ -97,9 +106,18 @@ export default class DropzoneS3Uploader extends React.Component {
         uploadRequestHeaders: {'x-amz-acl': 'public-read'},
         onFinishS3Put: this.handleFinish,
         onProgress: this.handleProgress,
-        onError: this.handleError,
-      }, props.upload),
-    })
+        onError: this.handleError
+      }, props.upload)
+    });
+  }
+
+  clearSelectedFiles = () => {
+    this.setState(
+      {...this.state,
+       error: null,
+       progress: null,
+       selectedFiles: []}
+    );
   }
 
   clearSelectedFiles = () => {
@@ -113,29 +131,43 @@ export default class DropzoneS3Uploader extends React.Component {
 
   handleProgress = (progress, textState, file, stats) => {
     this.props.onProgress && this.props.onProgress(progress, textState, file, stats);
-    this.setState({progress});
+    
+    if(this._mounted){
+      this.setState({progress});
+    }
   }
 
   handleError = err => {
-    this.props.onError && this.props.onError(err)
-    this.setState({error: err, progress: null})
+    this.props.onError && this.props.onError(err);
+    if(this._mounted){
+      this.setState({error: err, progress: null, activeUpload: null,
+                     activeUploadOptions: null});
+    }
   }
 
   handleFinish = (info, file) => {
     const uploadedFile = Object.assign({
       file,
-      fileUrl: this.fileUrl(this.props.s3Url, info.filename),
-    }, info)
+      fileUrl: this.fileUrl(this.props.s3Url, info.filename)
+    }, info);
 
-    const uploadedFiles = this.state.uploadedFiles
-    uploadedFiles.push(uploadedFile)
+    const uploadedFiles = this.state.uploadedFiles;
+    uploadedFiles.push(uploadedFile);
 
-    this.setState(
-      {uploadedFiles, error: null, progress: null, selectedFiles: []},
-      () => {
-        this.props.onFinish && this.props.onFinish(uploadedFile)
-      }
-    )
+    if(this._mounted){
+      this.setState(
+        {uploadedFiles, error: null, progress: null, selectedFiles: [],
+         activeUpload: null, activeUploadOptions: null},
+        () => {
+          this.props.onFinish && this.props.onFinish(uploadedFile);
+        }
+      );
+    } else {
+      // Even if the component isn't mounted anymore we want to call the
+      // callback onFinish method even if we're not modifying the component's
+      // internal state.
+      this.props.onFinish && this.props.onFinish(uploadedFile);
+    }
   }
 
   handleDrop = (files, rejectedFiles) => {
@@ -143,23 +175,45 @@ export default class DropzoneS3Uploader extends React.Component {
       files,
       ...this.state.uploaderOptions
     };
-    this.setState({
-      uploadedFiles: [], error: null, progress: null, selectedFiles: files
-    });
+    const newState = {
+      uploadedFiles: [],
+      error: null,
+      progress: null,
+      selectedFiles: files
+    };
+    this.setState(newState);
 
     this.props.onDrop && this.props.onDrop(files, rejectedFiles);
     if (this.props.uploadOnDrop){
-      this.startFileUpload(options);
+      this.startFileUpload(options, newState);
     }
   }
-
-  startFileUpload = (files=null) => {
+  
+  startFileUpload = (files=null, state=null) => {
     const options = {
       files: files !== null ? files: this.state.selectedFiles,
       ...this.state.uploaderOptions
     };
 
-    new S3Upload(options);
+    this.setState({
+      ...this.state,
+      ...state,
+      activeUploadOptions: options,
+      activeUpload: new S3Upload(options)
+    });
+  }
+
+  abortUpload = (filenames=null) => {
+    if (!this.state.activeUpload){
+      return;
+    }
+    if (filenames){
+      for (let i=0; i < filenames.length; i++) {
+        this.state.activeUpload.abortUpload(filenames[i]);
+      }
+    } else {
+      this.state.activeUpload.abortUpload();
+    }
   }
 
   fileUrl = (s3Url, filename) => `${s3Url.endsWith('/') ? s3Url.slice(0, -1) : s3Url}/${filename}`
