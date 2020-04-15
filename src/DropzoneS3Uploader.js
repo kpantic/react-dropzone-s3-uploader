@@ -148,7 +148,7 @@ export default class DropzoneS3Uploader extends React.Component {
   handleFinish = (info, file) => {
     const uploadedFile = Object.assign({
       file,
-      fileUrl: this.fileUrl(this.props.s3Url, info.filename)
+      fileUrl: this.fileUrl(this.props.s3Url, info)
     }, info);
 
     const uploadedFiles = this.state.uploadedFiles;
